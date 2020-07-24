@@ -1,0 +1,2 @@
+hello:
+  description: Hello from application-qa.yml (spring.profiles.active=qa)

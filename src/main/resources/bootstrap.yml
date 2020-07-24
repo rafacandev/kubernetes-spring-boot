@@ -1,0 +1,10 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: MyApplicationName
+  cloud:
+    config:
+      enabled: false
+hello:
+  description: Hello from bootstrap.yml
