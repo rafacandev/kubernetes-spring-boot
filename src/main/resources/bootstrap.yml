@@ -7,4 +7,7 @@ spring:
     config:
       enabled: false
 hello:
-  description: Hello from bootstrap.yml
+  public:
+    message: My public message from bootstrap.yml
+  secret:
+    message: My secret message from bootstrap.yml
