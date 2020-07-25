@@ -15,7 +15,7 @@ public class HelloMessage {
 	private String helloSecretMessage;
 
 	@PostConstruct
-	public void postConstruct() {
+	public void postConstruct() throws InterruptedException {
 		System.out.println("--- Configuration Values ---");
 		System.out.println("spring.application.name: " + applicationName);
 		System.out.println("hello.public.message: " + helloPublicMessage);

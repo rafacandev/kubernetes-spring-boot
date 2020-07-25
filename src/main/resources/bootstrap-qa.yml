@@ -1,2 +1,5 @@
 hello:
-  description: Hello from application-qa.yml (spring.profiles.active=qa)
+  public:
+    message: My public message from bootstrap-qa.yml
+  secret:
+    message: My secret message from bootstrap-qa.yml
