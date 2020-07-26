@@ -5,11 +5,11 @@ A simple Spring Boot project to demonstrate how to configure Spring Boot applica
 Requirements
 ------------
 The following applications should be installed in your local machine:
-    * [Git](https://www.atlassian.com/git/tutorials/install-git)
-    * Java 11, I suggest [SDKMAN](https://sdkman.io/usage)
-    * Maven, I suggest using [SDKMAN](https://sdkman.io/usage)
-    * [Docker](https://www.docker.com/get-started) 
-    * Kubernetes, I suggest [Install Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/) for local development
+* [Git](https://www.atlassian.com/git/tutorials/install-git)
+* Java 11, I suggest [SDKMAN](https://sdkman.io/usage)
+* Maven, I suggest using [SDKMAN](https://sdkman.io/usage)
+* [Docker](https://www.docker.com/get-started) 
+* Kubernetes, I suggest [Install Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/) for local development
 
 Build a Docker Image
 --------------------
@@ -82,6 +82,7 @@ hello.message.secret: Placeholder, SECRET message from application.yml
 Configuration Break Down
 ------------------------
 In our Spring Boot application we needed to define a few properties (using property format instead of yaml for shortness).
+
 **bootstrap.yml**
 ```
 # Disable configuration client which tells Spring Boot to not attempt to find a configuration server at start-up
@@ -89,6 +90,7 @@ spring.cloud.config.enabled=false
 # Enable secrets API which tells Spring Boot to load secrets from Kubernetes API
 spring.clound.kubernetes.secrets.enableApi: true
 ```
+
 **application.yml**
 ```
 # Spring Boot uses the application name as default configuration name objects (e.g: ConfigMap and Secret names)
@@ -104,15 +106,13 @@ See [[Spring Cloud Kubernetes] - Service Account](https://cloud.spring.io/spring
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 ...
-
----
-
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 ...
 ```
 
 **Secret** contains the secrets for our application:
+
 **bootstrap.yml**
 ```
 kind: Secret
@@ -125,6 +125,7 @@ data:
 
 **ConfigMap** describes the plain configuration values for our application.
 In this example, we expose values from an embedded `application.yml` for simplicity; nevertheless, key value pairs are also valid: 
+
 **bootstrap.yml**
 ```
 kind: ConfigMap
