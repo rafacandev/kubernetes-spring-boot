@@ -1,13 +1,7 @@
-server:
-  port: 8080
 spring:
-  application:
-    name: MyApplicationName
   cloud:
     config:
       enabled: false
-hello:
-  public:
-    message: My public message from bootstrap.yml
-  secret:
-    message: My secret message from bootstrap.yml
+    kubernetes:
+      secrets:
+        enableApi: true

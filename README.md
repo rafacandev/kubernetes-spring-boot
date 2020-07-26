@@ -9,7 +9,7 @@ The following applications should be installed in your local machine:
     * Java 11, I suggest [SDKMAN](https://sdkman.io/usage)
     * Maven, I suggest using [SDKMAN](https://sdkman.io/usage)
     * [Docker](https://www.docker.com/get-started) 
-    * Kubernetes, I suggest for local development [minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/)
+    * Kubernetes, I suggest [Install Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/) for local development
 
 Build a Docker Image
 --------------------
@@ -24,90 +24,148 @@ Build the application; our `.jar` file will be located at: `kubernetes-spring-0.
 mvn package
 ```
 
-Build a docker image based on the included [Dockerfile](Dockerfile)
+Run the application locally:
 ```
-docker build -t rafasantos/kubernetes-spring .
-```
-
-I also recommend reading [Spring Boot Docker](https://spring.io/guides/gs/spring-boot-docker/)
-for more info about creating Dockerfile for Spring Boot apps.
-
-Run our docker image locally:
-```
-docker run rafasantos/kubernetes-spring
+java -jar target/kubernetes-spring-0.0.1-SNAPSHOT.jar 
 ```
 
-The application outputs a summary of the values we want to configure.
-These values are defined in [bootstrap.yml](src/main/resources/bootstrap.yml)
-and [bootstrap-qa.yml](src/main/resources/bootstrap-qa.yml)
+The application outputs the configuration values that later we are going to configure in Kubernetes.
+These values are initially defined in [bootstrap.yml] and [application.yml].
 ```
 --- Configuration Values ---
-spring.application.name: MyApplicationName
-hello.public.message: My public message from bootstrap.yml
-hello.secret.message: My secret message from bootstrap.yml
+spring.application.name: kubernetes-spring
+hello.message.environment.variable: Placeholder, environment message from application.yml
+hello.message.public: Placeholder, public message from application.yml
+hello.message.secret: Placeholder, SECRET message from application.yml
+``` 
+
+Build a docker image based on the included [Dockerfile]. I also recommend reading [Spring Boot Docker] for more information.
+```
+docker build -t rafasantos/kubernetes-spring:v1 .
 ```
 
-Spring boot profiles can be set via environment variables, therefore if we set the active profile to `qa` we will see
-the values stored in [bootstrap-qa.yml](src/main/resources/bootstrap-qa.yml)
-
-```
-docker run --env SPRING_PROFILES_ACTIVE=qa rafasantos/kubernetes-spring
-```
-```
-hello.public.message: My public message from bootstrap-qa.yml
-```
-
-Spring boot also allow configuration values via environment variables.
-For example, we can set `hello.public.message` with the `HELLO_PUBLIC_MESSAGE` environment variable.
-```
-docker run --env HELLO_PUBLIC_MESSAGE='My public message from environment variables' rafasantos/kubernetes-spring
-```
-```
-hello.public.message: My public message from environment variables
-```
-
-Push Docker Image
------------------
-By default, Kubernetes looks for images in Docker repository.
-Therefore we can push our image normally with Docker:
+Publish Docker Image
+--------------------
+By default, Kubernetes looks for images in Docker repository. Therefore, we can push our image normally:
 ```
 docker push rafasantos/kubernetes-spring
 ```
 
-Alternatively, when using a local Kubernetes cluster (e.g: [Minikube](https://kubernetes.io/docs/setup/learning-environment/minikube/))
-then it can be configured to use the images from a local Docker deamon:
+Alternatively, when using a local Kubernetes (e.g: [Minikube]);
+then, it can be configured to use the images from the local Docker deamon:
 ```
-# Switches the terminal to connect to Minikube's dockers deamon
+# Switches the terminal to connect to Minikube's docker deamon
 eval $(minikube docker-env)
 
-# Note that Minikube's docker deamon is not awere of our image; therefore we need to re-create our image in Minikube's docker deamon
+# Minikube's docker deamon runs separetely from the main docker deamon
+# Therefore, we need to re-create our image in Minikube's docker deamon
 docker build -t rafasantos/kubernetes-spring .
 ```
 
-Build a Kubernetes Pod
-----------------------
-Build a Kubernetes Pod based on the included [kubernetes-spring.pod.yml](kubernetes-spring.pod.yml) 
+Spring Boot With ConfigMap and Secrets
+======================================
+Apply the Kubernetes descriptor `deployment.yml`:
 ```
-kubectl apply -f kubernetes-spring.pod.yml
-kubectl logs -f pod/kubernetes-spring
+kubectl apply -f deployment.yml
+kubectl logs -f kubernetes-spring
 ```
 
-> Note, if you are using a remote docker repository make sure to delete the `imagePullPolicy: Never`
-> line from [kubernetes-spring.pod.yml](kubernetes-spring.pod.yml)
-
-Spring Boot Configuration With Environment Variables
-----------------------------------------------------
-See [Define Environment Variables for a Container](https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/)
-Uncomment the following to [kubernetes-spring.pod.yml](kubernetes-spring.pod.yml)
+The application outputs the configuration values sourced in the `deployment.yml`.
 ```
+--- Configuration Values ---
+spring.application.name: kubernetes-spring
+hello.message.environment.variable: Placeholder, environment message from application.yml
+hello.message.public: Placeholder, public message from application.yml
+hello.message.secret: Placeholder, SECRET message from application.yml
+```
+
+Configuration Break Down
+------------------------
+In our Spring Boot application we needed to define a few properties (using property format instead of yaml for shortness).
+**bootstrap.yml**
+```
+# Disable configuration client which tells Spring Boot to not attempt to find a configuration server at start-up
+spring.cloud.config.enabled=false
+# Enable secrets API which tells Spring Boot to load secrets from Kubernetes API
+spring.clound.kubernetes.secrets.enableApi: true
+```
+**application.yml**
+```
+# Spring Boot uses the application name as default configuration name objects (e.g: ConfigMap and Secret names)
+spring.application.name: kubernetes-spring
+```
+
+In our `deployment.yml` we had to define a number of Kubernetes objects.
+
+**Role** and **RoleBinding** are necessary; so, Spring Boot is able to read ConfigMap and Secret objects from Kubernetes API.
+See [[Spring Cloud Kubernetes] - Service Account](https://cloud.spring.io/spring-cloud-kubernetes/reference/html/#service-account)
+**bootstrap.yml**
+```
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+...
+
+---
+
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+...
+```
+
+**Secret** contains the secrets for our application:
+**bootstrap.yml**
+```
+kind: Secret
+apiVersion: v1
+...
+data:
+  hello.message.secret: SXQgd29ya2VkISBTZWUgW1NlY3JldF0uZGF0YS5oZWxsby5tZXNzYWdlLnNlY3JldCBpbiBrdWJlcm5ldGVzLXNwcmluZy55bWwK
+```
+
+
+**ConfigMap** describes the plain configuration values for our application.
+In this example, we expose values from an embedded `application.yml` for simplicity; nevertheless, key value pairs are also valid: 
+**bootstrap.yml**
+```
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: kubernetes-spring
+data:
+  application.yml: |-
+    hello:
+      message:
+        public: It worked! See [ConfigMap].data.application.yml in kubernetes-spring.yml
+```
+
+**Pod** describes the container for our Docker image.
+```
+kind: Pod
+apiVersion: v1
+metadata:
+  name: kubernetes-spring
+spec:
+  containers:
+    - name: kubernetes-spring
+      image: rafasantos/kubernetes-spring:v1
       env:
-      - name: HELLO_PUBLIC_MESSAGE
-        value: 'My public message from environment variables'
+        - name: HELLO_MESSAGE_ENVIRONMENT_VARIABLE
+          value: It worked! See [Pod].spec.containers.env in deployment.yml
 ```
 
-Apply the changes and check the logs: 
-```
-kubectl apply -f kubernetes-spring.pod.yml
-kubectl logs -f pod/kubernetes-spring
-```
 
+References
+==========
+[Spring Cloud Kubernetes](https://cloud.spring.io/spring-cloud-kubernetes/reference/html/)
+
+[Kubernetes Secrets Best Practices]
+
+[Minikube]
+
+[Kubernetes Secrets Best Practices]: https://kubernetes.io/docs/concepts/configuration/secret/#best-practices
+[Minikube]: https://kubernetes.io/docs/setup/learning-environment/minikube/
+[Spring Boot Docker]: https://spring.io/guides/gs/spring-boot-docker/
+[application.yml]: src/main/resources/application.yml
+[bootstrap.yml]: src/main/resources/bootstrap.yml
+[Dockerfile]: Dockerfile
+[deployment.yml]: deployment.yml

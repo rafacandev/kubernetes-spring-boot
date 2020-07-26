@@ -1,0 +1,60 @@
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: namespace-reader
+rules:
+  - apiGroups: ["", "extensions", "apps"]
+    resources: ["configmaps", "secrets"]
+    verbs: ["get", "list", "watch"]
+
+---
+
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: namespace-reader-binding
+subjects:
+  - kind: ServiceAccount
+    name: default
+    apiGroup: ""
+roleRef:
+  kind: Role
+  name: namespace-reader
+  apiGroup: ""
+
+---
+
+kind: Secret
+apiVersion: v1
+metadata:
+  name: kubernetes-spring
+type: Opaque
+data:
+  # Base64 encoded from: It worked! See [Secret].data.hello.message.secret in deployment.yml
+  hello.message.secret: SXQgd29ya2VkISBTZWUgW1NlY3JldF0uZGF0YS5oZWxsby5tZXNzYWdlLnNlY3JldCBpbiBrdWJlcm5ldGVzLXNwcmluZy55bWwK
+
+---
+
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: kubernetes-spring
+data:
+  application.yml: |-
+    hello:
+      message:
+        public: It worked! See [ConfigMap].data.application.yml in kubernetes-spring.yml
+
+---
+
+kind: Pod
+apiVersion: v1
+metadata:
+  name: kubernetes-spring
+spec:
+  containers:
+    - name: kubernetes-spring
+      image: rafasantos/kubernetes-spring:v1
+      env:
+        - name: HELLO_MESSAGE_ENVIRONMENT_VARIABLE
+          value: It worked! See [Pod].spec.containers.env in deployment.yml

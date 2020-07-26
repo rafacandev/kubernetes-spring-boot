@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: kubernetes-spring
+hello:
+  message:
+    environment:
+      variable: Placeholder, environment message from application.yml
+    public: Placeholder, public message from application.yml
+    secret: Placeholder, SECRET message from application.yml
