@@ -1,0 +1,33 @@
+kind: Pod
+apiVersion: v1
+metadata:
+  name: kubernetes-spring-logging
+  annotations:
+    logback: |-
+      <configuration scan="true" scanPeriod="5 seconds">
+          <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+              <encoder>
+                  <pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
+              </encoder>
+          </appender>
+          <root level="INFO">
+              <appender-ref ref="STDOUT" />
+          </root>
+      </configuration>
+spec:
+  containers:
+    - name: kubernetes-spring-logging
+      image: rafasantos/kubernetes-spring-logging:v1
+      env:
+        - name: LOGGING_CONFIG
+          value: /etc/config/logback.xml
+      volumeMounts:
+        - name: logback
+          mountPath: /etc/config
+  volumes:
+    - name: logback
+      downwardAPI:
+        items:
+          - path: logback.xml
+            fieldRef:
+              fieldPath: metadata.annotations['logback']
